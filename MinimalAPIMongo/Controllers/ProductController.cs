@@ -73,26 +73,41 @@ namespace MinimalAPIMongo.Controllers
 
         }
 
-        [HttpPut]
-        public async Task<ActionResult> Update(Product p)
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(string id, Product updatedClient)
         {
             try
             {
-                var a = Builders<Product>.Filter.Eq(x => x.Id, p.Id);
-               
+                var filter = Builders<Product>.Filter.Eq(c => c.Id, id);
+                var client = await _product.Find(filter).FirstOrDefaultAsync();
+                if (client == null)
+                {
+                    return NotFound("Cliente não encontrado!");
+                }
 
-                 await _product.ReplaceOneAsync(a, p);
+                // Atualize as propriedades do cliente com os novos valores
 
-                return Ok(a + "foi atualizado");
+                client.Name = updatedClient.Name;
+                client.Price = updatedClient.Price;
+                
+                // Atualize o cliente no banco de dados
+                var result = await _product.ReplaceOneAsync(filter, client);
+
+                if (result.IsAcknowledged && result.ModifiedCount > 0)
+                {
+                    return Ok(client);
+                }
+                else
+                {
+                    return BadRequest("Erro na atualização");
+                }
             }
             catch (Exception e)
             {
-
                 return BadRequest(e.Message);
             }
-
-
         }
+
 
 
     }
